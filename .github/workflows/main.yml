@@ -1,0 +1,44 @@
+name: Build libmonetloader.so
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-so:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK & CMake
+        run: sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build native libraries only (Release)
+        run: ./gradlew :app:externalNativeBuildRelease --stacktrace
+
+      - name: Package outputs
+        run: |
+          mkdir -p out/armeabi-v7a
+          find app/build/intermediates/cxx -name "libmonetloader.so" -exec cp {} out/armeabi-v7a/ \;
+          cp lib/lua/bin/armeabi-v7a/shared_release/libluajit-5.1.so out/armeabi-v7a/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: monetloader-so
+          path: out/
