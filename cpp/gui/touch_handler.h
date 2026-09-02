@@ -110,8 +110,15 @@ class touch_handler {
   private:
   bool is_num_valid(touch_type type, int num_check)
   {
-    return ((type == touch_type::POP || type == touch_type::MOVE) && pointers[num_check])
-        || (type == touch_type::PUSH && (active_pointers == 0 || multitouch));
+    if (num_check < 0 || num_check >= IM_ARRAYSIZE(pointers)) return false;
+
+    if (type == touch_type::PUSH) {
+      // Izinkan PUSH jika pointer belum aktif, dan berikan kelonggaran untuk indeks 0 atau saat active_pointers tidak akurat
+      return !pointers[num_check];
+    }
+
+    // Untuk MOVE atau POP, pastikan pointer tersebut memang tercatat aktif
+    return pointers[num_check];
   }
 
   void reset(const touch_data& data)
