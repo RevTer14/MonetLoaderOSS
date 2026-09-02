@@ -18,13 +18,17 @@ void set_default_profile(rapidjson::Document& doc)
   doc["compat_scripts"].SetArray();
 
 #if INTPTR_MAX == INT64_MAX
-  doc["profile_name"].SetString("default GTA:2.1 SAMP:NULL", doc.GetAllocator());
-  doc["samp_name"] = "";
-  doc["receiveignorerpc_pattern"] = "";
-  doc["cnetgame_ctor_pattern"] = "";
-  doc["rakclientinterface_netgame_offset"] = 0;
-  doc["use_samp_touch_workaround"] = false;
-  doc["nveventinsertnewest_offset"] = 0x0;
+  doc["profile_name"].SetString("default GTA:2.1 SAMP:SCH-1.3", doc.GetAllocator());
+  doc["samp_name"].SetString("libsamp.so", doc.GetAllocator());
+  doc["receiveignorerpc_pattern"].SetString(
+    "FFC301D1E80B00FDFDFB01A9FD630091FB1700F9FA6703A9F85F04A9F65705A9F44F06A9080040F9F30300AA082D40F900013FD6",
+    doc.GetAllocator());
+  doc["cnetgame_ctor_pattern"].SetString(
+    "FF0304D1FD7B0BA9FDC30291FA670CA9F85F0DA9F6570EA9F44F0FA9F40304AA",
+    doc.GetAllocator());
+  doc["rakclientinterface_netgame_offset"] = 536;
+  doc["use_samp_touch_workaround"] = true;
+  doc["nveventinsertnewest_offset"] = 3362884;
 #else
   doc["profile_name"].SetString("default GTA:2.0 SAMP:ARZ-15.0.8", doc.GetAllocator());
   doc["samp_name"].SetString("libsamp.so", doc.GetAllocator());
