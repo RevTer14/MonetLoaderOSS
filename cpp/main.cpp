@@ -95,31 +95,52 @@ struct NvEvent {
   NvVec2 posn[4]; // 3rd and 4th fingers don't really belong here, but they belong according to Arizona layout
 };
 monethook::hook<void(NvEvent*)> o_nveventinsertnewest;
+
 void h_nveventinsertnewest(NvEvent* ev)
+
 {
   static NvVec2 pointers_posns[4];
+
   if (!ev || ev->type != 4) {
     return o_nveventinsertnewest(ev);
   }
 
-  int action = ev->mt_flags & 0x00FF;
-  if (action == 4) { // cancel
-    action = touch_handler::touch_type::POP;
-  }
+  int raw_action = ev->mt_flags & 0x00FF;
+
   int num = (ev->mt_flags & 0xFF00) >> 8;
 
-  if (action != touch_handler::touch_type::MOVE) {
-    submit_touch(action, num, static_cast<int>(ev->posn[num].x), static_cast<int>(ev->posn[num].y));
+  // -- REMAPPING YANG BENAR (NVIDIA NvEvent -> AND_TouchEvent) --
+
+  int action = raw_action;
+
+  if (raw_action == 0) {
+    action = 2;  // NV PUSH (0) -> AND PUSH (2)
+
+  } else if (raw_action == 1 || raw_action == 4) {
+    action = 1;  // NV POP (1)/CANCEL (4) -> AND POP (1)
+
+  } else if (raw_action == 2) {
+    action = 3;  // NV MOVE (2) -> AND MOVE (3)
+  }
+
+  // Angka 3 adalah touch_handler::touch_type::MOVE
+
+  if (action != 3) {
+    submit_touch(action, num, static_cast<int>(ev->posn[num].x),
+                 static_cast<int>(ev->posn[num].y));
   }
 
   for (int i = 0; i < 4; ++i) {
     if (ev->posn[i] != pointers_posns[i]) {
-      if (action != touch_handler::touch_type::MOVE && i == num) {
+      if (action != 3 && i == num) {
         pointers_posns[i] = ev->posn[i];
+
         continue;
       }
 
-      submit_touch(touch_handler::touch_type::MOVE, i, static_cast<int>(ev->posn[i].x), static_cast<int>(ev->posn[i].y));
+      submit_touch(3, i, static_cast<int>(ev->posn[i].x),
+                   static_cast<int>(ev->posn[i].y));
+
       pointers_posns[i] = ev->posn[i];
     }
   }
@@ -170,7 +191,7 @@ void process_touch()
       if (o_and_touchevent.applied())
         o_and_touchevent(i.type, i.num, i.x, i.y);
       else
-        (*reinterpret_cast<and_touchevent_t*>(lib_manager::got_and_touchevent))(i.type, i.num, i.x, i.y);
+        reinterpret_cast<and_touchevent_t>(lib_manager::got_and_touchevent)(i.type, i.num, i.x, i.y);
     }
   }
 
