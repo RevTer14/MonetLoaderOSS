@@ -1,0 +1,74 @@
+name: Build libmonetloader.so (arm64-v8a)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'CMake build type'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - RelWithDebInfo
+          - Debug
+
+env:
+  ANDROID_ABI: arm64-v8a
+  ANDROID_PLATFORM: android-24
+  ANDROID_STL: c++_shared
+  BUILD_TYPE: ${{ github.event.inputs.build_type || 'Release' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Set up NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          add-to-path: true
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ env.ANDROID_ABI }} \
+            -DANDROID_PLATFORM=${{ env.ANDROID_PLATFORM }} \
+            -DANDROID_STL=${{ env.ANDROID_STL }} \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} -j $(nproc)
+
+      - name: Locate output
+        id: locate
+        run: |
+          SO_PATH=$(find build -name "libmonetloader.so" | head -n 1)
+          if [ -z "$SO_PATH" ]; then
+            echo "libmonetloader.so not found!"
+            exit 1
+          fi
+          echo "so_path=$SO_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libmonetloader-${{ env.ANDROID_ABI }}-${{ env.BUILD_TYPE }}
+          path: ${{ steps.locate.outputs.so_path }}
+          if-no-files-found: error
