@@ -66,7 +66,7 @@ std::deque<touch_info> g_touch_queue;
 
 void submit_touch(int type, int num, int x, int y);
 
-monethook::plt_hook<void(int, int, int, int)> o_and_touchevent;
+monethook::hook<void(int, int, int, int)> o_and_touchevent;
 void h_and_touchevent(int type, int num, int x, int y)
 {
   if (lua::script_manager::initialized()) {
@@ -313,7 +313,8 @@ void do_init()
 #endif
 
   // ------ GOT addresses ------
-  lib_manager::got_and_touchevent = scanner.sym("_Z14AND_TouchEventiiii");
+  lib_manager::got_and_touchevent = reinterpret_cast<std::uintptr_t>(
+      dlsym(handle, "_Z14AND_TouchEventiiii"));
 
   // ------ Common addresses ------
   lib_manager::process_one_command = reinterpret_cast<std::uintptr_t>(dlsym(handle, "_ZN14CRunningScript17ProcessOneCommandEv"));
