@@ -407,7 +407,7 @@ void do_init()
     o_netgame_ctor.apply();
 
     if (compat::use_samp_touch_workaround) {
-      o_nveventinsertnewest = { lib_manager::gtasa_base + (compat::nveventinsertnewest_offset | 1), h_nveventinsertnewest };
+      o_nveventinsertnewest = { lib_manager::gtasa_base + (compat::nveventinsertnewest_offset), h_nveventinsertnewest };
       o_nveventinsertnewest.apply();
     } else {
       o_and_touchevent = { lib_manager::got_and_touchevent, h_and_touchevent };
