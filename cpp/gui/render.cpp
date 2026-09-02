@@ -10,6 +10,7 @@
 #include "screen.h"
 #include "touch_handler.h"
 #include "utils/android.h"
+#include "logger.h"
 #include <cmath>
 #include <string>
 
