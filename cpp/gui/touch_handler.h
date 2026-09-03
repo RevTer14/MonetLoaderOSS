@@ -1,6 +1,7 @@
 #pragma once
 #include "context_switch.h"
 #include "imgui/imgui.h"
+#include "logger.h"
 #include <cstddef>
 
 namespace ImGui {
