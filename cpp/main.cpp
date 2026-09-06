@@ -147,7 +147,7 @@ void h_nveventinsertnewest(NvEvent* ev)
     } else {
     //   logger::log<logger::LV_SYSTEM, false>(nullptr,
     //     "[NvEvent] SKIP invalid coord action={} idx={} pos=({:.1f},{:.1f})", action, idx, px, py);
-    // }
+     }
   }
 
   // --- MOVE untuk slot lain yang koordinatnya berubah ---
