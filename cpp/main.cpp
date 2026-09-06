@@ -95,7 +95,6 @@ struct NvEvent {
   NvVec2 posn[4]; // 3rd and 4th fingers don't really belong here, but they belong according to Arizona layout
 };
 monethook::hook<void(NvEvent*)> o_nveventinsertnewest;
-
 void h_nveventinsertnewest(NvEvent* ev)
 {
   static NvVec2 pointers_posns[4];
@@ -105,68 +104,64 @@ void h_nveventinsertnewest(NvEvent* ev)
   }
 
   int raw_action = ev->mt_flags & 0x00FF;
-  int num = (ev->mt_flags & 0xFF00) >> 8;
+  int mask = (ev->mt_flags & 0xFF00) >> 8; // BITMASK slot aktif, BUKAN index!
 
-  // -- REMAPPING NVIDIA NvEvent -> AND_TouchEvent --
-  int action = raw_action;
-  if (raw_action == 0) {
-    action = touch_handler::touch_type::PUSH; // 2
+  // -- REMAPPING NVIDIA NvEvent -> AND_TouchEvent (berdasarkan bukti empiris) --
+  int action;
+  if (raw_action == 2) {
+    action = touch_handler::touch_type::PUSH; // kontak pertama
   } else if (raw_action == 1 || raw_action == 4) {
-    action = touch_handler::touch_type::POP;  // 1
-  } else if (raw_action == 2) {
-    action = touch_handler::touch_type::MOVE; // 3
-  }
-
-  // Clamp num biar gak out-of-bounds akses posn[4]
-  if (num < 0 || num >= 4) {
-    logger::log<logger::LV_SYSTEM, false>(nullptr,
-      "[NvEvent] num out of range! raw_action={} mapped_action={} num={} mt_flags=0x{:04X}",
-      raw_action, action, num, static_cast<unsigned>(ev->mt_flags));
-    num = 0;
+    action = touch_handler::touch_type::POP;  // release / cancel
+  } else if (raw_action == 3) {
+    action = touch_handler::touch_type::MOVE; // lanjutan gerak
+  } else {
+    action = touch_handler::touch_type::MOVE; // fallback aman, jangan submit non-move yg gak dikenal
   }
 
   auto is_valid_coord = [](float v) {
     return std::isfinite(v) && v > -100000.f && v < 100000.f;
   };
 
-  // --- LOG DEBUG LENGKAP: raw + mapped + semua slot ---
-  logger::log<logger::LV_SYSTEM, false>(nullptr,
-    "[NvEvent] raw_action={} mapped_action={} num={} posn[num]=({:.1f},{:.1f}) "
-    "all=[({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f})]",
-    raw_action, action, num, ev->posn[num].x, ev->posn[num].y,
-    ev->posn[0].x, ev->posn[0].y, ev->posn[1].x, ev->posn[1].y,
-    ev->posn[2].x, ev->posn[2].y, ev->posn[3].x, ev->posn[3].y);
-
-  // --- Submit event non-MOVE (PUSH/POP) untuk pointer utama ---
-  if (action != touch_handler::touch_type::MOVE) {
-    float px = ev->posn[num].x;
-    float py = ev->posn[num].y;
-
-    if (is_valid_coord(px) && is_valid_coord(py)) {
-      submit_touch(action, num, static_cast<int>(px), static_cast<int>(py));
-    } else {
-      logger::log<logger::LV_SYSTEM, false>(nullptr,
-        "[NvEvent] SKIP invalid coord for action={} num={} pos=({:.1f},{:.1f})",
-        action, num, px, py);
+  // Decode index slot yang sebenarnya dari bitmask (ambil bit terendah yg menyala)
+  int idx = -1;
+  if (mask != 0) {
+    for (int b = 0; b < 4; ++b) {
+      if (mask & (1 << b)) { idx = b; break; }
     }
   }
 
-  // --- Submit MOVE untuk slot lain yang berubah ---
+  logger::log<logger::LV_SYSTEM, false>(nullptr,
+    "[NvEvent] raw_action={} mapped_action={} mask=0x{:02X} idx={} posn[idx]=({:.1f},{:.1f}) "
+    "all=[({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f})]",
+    raw_action, action, mask, idx,
+    idx >= 0 ? ev->posn[idx].x : -1.f, idx >= 0 ? ev->posn[idx].y : -1.f,
+    ev->posn[0].x, ev->posn[0].y, ev->posn[1].x, ev->posn[1].y,
+    ev->posn[2].x, ev->posn[2].y, ev->posn[3].x, ev->posn[3].y);
+
+  // --- Submit PUSH/POP untuk slot yang benar (hasil decode bitmask, bukan mask mentah) ---
+  if (action != touch_handler::touch_type::MOVE && idx >= 0) {
+    float px = ev->posn[idx].x;
+    float py = ev->posn[idx].y;
+    if (is_valid_coord(px) && is_valid_coord(py)) {
+      submit_touch(action, idx, static_cast<int>(px), static_cast<int>(py));
+    } else {
+      logger::log<logger::LV_SYSTEM, false>(nullptr,
+        "[NvEvent] SKIP invalid coord action={} idx={} pos=({:.1f},{:.1f})", action, idx, px, py);
+    }
+  }
+
+  // --- MOVE untuk slot lain yang koordinatnya berubah ---
   for (int i = 0; i < 4; ++i) {
     if (ev->posn[i] != pointers_posns[i]) {
-      // update cache selalu, biar gak spam terus tiap frame walau di-skip
       NvVec2 new_pos = ev->posn[i];
       pointers_posns[i] = new_pos;
 
-      // slot yang baru saja diproses sebagai PUSH/POP di atas -> skip, jangan double-submit
-      if (action != touch_handler::touch_type::MOVE && i == num) {
-        continue;
+      if (action != touch_handler::touch_type::MOVE && i == idx) {
+        continue; // sudah di-submit sebagai PUSH/POP di atas
       }
-
       if (!is_valid_coord(new_pos.x) || !is_valid_coord(new_pos.y)) {
-        continue; // skip slot garbage (uninitialized / NaN / out-of-range)
+        continue; // slot garbage
       }
-
       submit_touch(touch_handler::touch_type::MOVE, i,
                    static_cast<int>(new_pos.x), static_cast<int>(new_pos.y));
     }
