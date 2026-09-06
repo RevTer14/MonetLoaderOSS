@@ -266,15 +266,15 @@ void gui::render::render_overlay()
 
   // Debug posisi window ImGui aktif (gunakan internal header imgui_internal.h jika diperlukan, 
   // atau cetak ukuran DisplaySize io untuk membandingkan skala sentuhan x: 301, y: 917)
-  ImGuiIO& io = ImGui::GetIO();
-  static int frame_counter = 0;
-  if (++frame_counter % 120 == 0) { // Cetak setiap 120 frame sekali agar terhindar dari spam/crash log
-    logger::log<logger::LV_SYSTEM, false>(
-      nullptr, 
-      "[ImGui Display] Size: ({}, {}), MousePos: ({}, {})", 
-      io.DisplaySize.x, io.DisplaySize.y, io.MousePos.x, io.MousePos.y
-    );
-  }
+  // ImGuiIO& io = ImGui::GetIO();
+  // static int frame_counter = 0;
+  // if (++frame_counter % 120 == 0) { // Cetak setiap 120 frame sekali agar terhindar dari spam/crash log
+  //   logger::log<logger::LV_SYSTEM, false>(
+  //     nullptr, 
+  //     "[ImGui Display] Size: ({}, {}), MousePos: ({}, {})", 
+  //     io.DisplaySize.x, io.DisplaySize.y, io.MousePos.x, io.MousePos.y
+  //   );
+  // }
 
   keyboard::instance().render(g_overlay_touch.active_pointers_count() > 1);
   if (game::IsPaused()) {
