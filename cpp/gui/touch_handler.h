@@ -31,7 +31,7 @@ class touch_handler {
 
   bool handle(const touch_data& data)
   {
-    logger::log<logger::LV_SYSTEM, false>(nullptr, "[Touch RAW] type={} num={} x={} y={}", (int)data.type, data.num, data.x, data.y);
+    // logger::log<logger::LV_SYSTEM, false>(nullptr, "[Touch RAW] type={} num={} x={} y={}", (int)data.type, data.num, data.x, data.y);
     
     if (!touches_enabled || data.num >= IM_ARRAYSIZE(pointers)) {
       return false;
