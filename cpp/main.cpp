@@ -130,13 +130,13 @@ void h_nveventinsertnewest(NvEvent* ev)
     }
   }
 
-  logger::log<logger::LV_SYSTEM, false>(nullptr,
-    "[NvEvent] raw_action={} mapped_action={} mask=0x{:02X} idx={} posn[idx]=({:.1f},{:.1f}) "
-    "all=[({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f})]",
-    raw_action, action, mask, idx,
-    idx >= 0 ? ev->posn[idx].x : -1.f, idx >= 0 ? ev->posn[idx].y : -1.f,
-    ev->posn[0].x, ev->posn[0].y, ev->posn[1].x, ev->posn[1].y,
-    ev->posn[2].x, ev->posn[2].y, ev->posn[3].x, ev->posn[3].y);
+  // logger::log<logger::LV_SYSTEM, false>(nullptr,
+  //   "[NvEvent] raw_action={} mapped_action={} mask=0x{:02X} idx={} posn[idx]=({:.1f},{:.1f}) "
+  //   "all=[({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f}),({:.1f},{:.1f})]",
+  //   raw_action, action, mask, idx,
+  //   idx >= 0 ? ev->posn[idx].x : -1.f, idx >= 0 ? ev->posn[idx].y : -1.f,
+  //   ev->posn[0].x, ev->posn[0].y, ev->posn[1].x, ev->posn[1].y,
+  //   ev->posn[2].x, ev->posn[2].y, ev->posn[3].x, ev->posn[3].y);
 
   // --- Submit PUSH/POP untuk slot yang benar (hasil decode bitmask, bukan mask mentah) ---
   if (action != touch_handler::touch_type::MOVE && idx >= 0) {
@@ -145,9 +145,9 @@ void h_nveventinsertnewest(NvEvent* ev)
     if (is_valid_coord(px) && is_valid_coord(py)) {
       submit_touch(action, idx, static_cast<int>(px), static_cast<int>(py));
     } else {
-      logger::log<logger::LV_SYSTEM, false>(nullptr,
-        "[NvEvent] SKIP invalid coord action={} idx={} pos=({:.1f},{:.1f})", action, idx, px, py);
-    }
+    //   logger::log<logger::LV_SYSTEM, false>(nullptr,
+    //     "[NvEvent] SKIP invalid coord action={} idx={} pos=({:.1f},{:.1f})", action, idx, px, py);
+    // }
   }
 
   // --- MOVE untuk slot lain yang koordinatnya berubah ---
@@ -213,7 +213,11 @@ void process_touch()
       if (o_and_touchevent.applied())
         o_and_touchevent(i.type, i.num, i.x, i.y);
       else
+      {
         reinterpret_cast<and_touchevent_t>(lib_manager::got_and_touchevent)(i.type, i.num, i.x, i.y);
+        logger::log<logger::LV_SYSTEM, false>(nullptr,
+         "reinterpret_cast triggered");
+      }
     }
   }
 
