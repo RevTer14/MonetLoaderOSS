@@ -66,7 +66,7 @@ include(cpp/CMakeLists.txt)
 
 # ------ Definitions ------
 # Build data
-set(SAMP_MODE 1) # 0 - disabled, 1 - optional, 2 - required
+set(SAMP_MODE 0) # 0 - disabled, 1 - optional, 2 - required
 string(TIMESTAMP BUILD_TIMESTAMP "%s")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "PROJECT_BUILD_TIMESTAMP=${BUILD_TIMESTAMP}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "SAMP_MODE=${SAMP_MODE}")
